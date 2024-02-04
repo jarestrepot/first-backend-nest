@@ -3,18 +3,26 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './entities/user.entity';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   controllers: [AuthController],
   providers: [AuthService],
   imports: [
+    ConfigModule.forRoot(),
     // Todos los schemas expuesto en el módulo, crea el espació en del schema en el compas.
     MongooseModule.forFeature([
       {
         name: User.name,
         schema: UserSchema
       }
-    ])
+    ]),
+    JwtModule.register({
+      global: true,
+      secret: process.env.JWT_SECRET_KEY,
+      signOptions: { expiresIn: '6h' },
+    }),
   ]
 })
 export class AuthModule {}
