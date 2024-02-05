@@ -2,24 +2,23 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 
-import  * as bcryptjs from 'bcryptjs';
-
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
-import { User } from './entities/user.entity';
-import { LoginDto } from './dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt';
+import * as bcryptjs from 'bcryptjs';
+
+import { LoginResponse } from './interfaces/login-response';
 import { JwtPayload } from './interfaces/jwt-payload';
+import { CreateUserDto, UpdateAuthDto, LoginDto, RegisterUserDto } from './dto';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class AuthService {
 
-  constructor( @InjectModel( User.name ) 
-    private userModel: Model<User>,
+  constructor(@InjectModel(User.name)
+  private userModel: Model<User>,
     private jwtService: JwtService,
-  ){}
+  ) { }
 
-  async create( createUserDto: CreateUserDto ):Promise<User> {
+  async create(createUserDto: CreateUserDto): Promise<User> {
 
     try {
 
@@ -33,39 +32,46 @@ export class AuthService {
       // Guardamos el usuario de esta forma tan sencilla.
       await newUser.save();
 
-      const { password:_, ...user } = newUser.toJSON();
+      const { password: _, ...user } = newUser.toJSON();
 
       // No enviamos la contraseña encriptada
       return user;
 
-
-    } catch ( error ) {
-      if( error.code === 11000 ){
-        throw new BadRequestException(`${createUserDto.email } Already exists ` )
+    } catch (error) {
+      if (error.code === 11000) {
+        throw new BadRequestException(`${createUserDto.email} Already exists `)
       }
 
       throw new BadRequestException('Something terribe happen!!')
     }
   }
 
-  async login( { email, password }: LoginDto ){
+  async register( registerUserDto: RegisterUserDto ): Promise<LoginResponse> {
+
+    const user = await this.create( registerUserDto );
+
+    return {
+      user: user,
+      token: await this.getJwtToken({ id: user._id })
+    }
+
+  }
+
+  async login({ email, password }: LoginDto): Promise<LoginResponse> {
 
     // Recuperamos al usuario si existe
     const userFind = await this.userModel.findOne({ email });
-  
+
     // validamos las crdenciales
     if ( !userFind ) throw new UnauthorizedException('Not valid credencials');
-    if ( !bcryptjs.compareSync( password, userFind.password ) ) throw new UnauthorizedException('Not valid credencials');
+    if ( !bcryptjs.compareSync(password, userFind.password) ) throw new UnauthorizedException('Not valid credencials');
 
     const { password: _, ...user } = userFind.toJSON();
 
     return {
-      data: user,
+      user: user,
       token: await this.getJwtToken({ id: userFind.id }),
     }
-
-
-    // Usuario y token de acceso(JWT)
 
   }
 
@@ -85,8 +91,7 @@ export class AuthService {
     return `This action removes a #${id} auth`;
   }
 
-  getJwtToken( payload: JwtPayload ): Promise<string>{
-    const token = this.jwtService.signAsync( payload );
-    return token;
+  getJwtToken(payload: JwtPayload): Promise<string> {
+    return  this.jwtService.signAsync(payload);
   }
 }
