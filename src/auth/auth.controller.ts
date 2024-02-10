@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateUserDto, UpdateAuthDto, LoginDto, RegisterUserDto } from './dto';
+import { CreateUserDto, UpdateAuthDto, LoginDto, RegisterUserDto, CheckEmailDto } from './dto';
 import { AuthGuard } from './guards/auth.guard';
 import { User } from './entities/user.entity';
 import { LoginResponse } from './interfaces/login-response';
@@ -23,6 +23,11 @@ export class AuthController {
   @Post('/register')
   register(@Body() registerUserDto: RegisterUserDto) {
     return this.authService.register(registerUserDto);
+  }
+
+  @Post('/check-email')
+  checkEmail( @Body() checkEmailDto: CheckEmailDto ):Promise<boolean>{
+    return this.authService.findUserByEmail(checkEmailDto);
   }
 
   @UseGuards(AuthGuard)

@@ -7,7 +7,7 @@ import * as bcryptjs from 'bcryptjs';
 
 import { LoginResponse } from './interfaces/login-response';
 import { JwtPayload } from './interfaces/jwt-payload';
-import { CreateUserDto, UpdateAuthDto, LoginDto, RegisterUserDto } from './dto';
+import { CreateUserDto, UpdateAuthDto, LoginDto, RegisterUserDto, CheckEmailDto } from './dto';
 import { User } from './entities/user.entity';
 
 @Injectable()
@@ -85,10 +85,6 @@ export class AuthService {
     return restUser;
   }
 
-  async checkTokenUser( token: string ){
-    
-  }
-
   findOne(id: number) {
     return `This action returns a #${id} auth`;
   }
@@ -99,6 +95,12 @@ export class AuthService {
 
   remove(id: number) {
     return `This action removes a #${id} auth`;
+  }
+
+  async findUserByEmail(checkEmailDto: CheckEmailDto):Promise<boolean>{
+    const user = await this.userModel.findOne({ email: checkEmailDto.email});
+    if( !user ) return false;
+    return true;
   }
 
   async getJwtToken(payload: JwtPayload): Promise<string> {
